@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title if title else "Smart Notes" }}</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        /* Body & container */
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #121212;
+            color: #e0e0e0;
+            padding-top: 80px; /* space for fixed navbar */
+        }
+
+        .container {
+            max-width: 1200px;
+        }
+
+        /* Glass Navbar */
+        .navbar {
+            backdrop-filter: blur(10px);
+            background-color: rgba(20, 20, 30, 0.9) !important;
+        }
+
+        .navbar-brand {
+            font-weight: 700;
+            background: linear-gradient(90deg, #38bdf8, #a78bfa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .nav-link {
+            color: #d1d5db !important;
+            font-weight: 500;
+            position: relative;
+            transition: all 0.3s;
+        }
+
+        .nav-link:hover {
+            color: #fff !important;
+        }
+
+        .nav-link::after {
+            content: "";
+            position: absolute;
+            width: 0;
+            height: 2px;
+            left: 0;
+            bottom: 0;
+            background: #38bdf8;
+            transition: width 0.3s ease;
+        }
+
+        .nav-link:hover::after {
+            width: 100%;
+        }
+
+        /* Active Navbar Link Glow */
+        .nav-link.active {
+            color: #38bdf8 !important;
+        }
+
+        .btn-outline-danger {
+            border-color: #ef4444 !important;
+            color: #ef4444 !important;
+            transition: all 0.3s;
+        }
+
+        .btn-outline-danger:hover {
+            background-color: #ef4444 !important;
+            color: #fff !important;
+        }
+
+        /* Glowing Card Effect */
+        .glow-card {
+            background: rgba(255,255,255,0.05);
+            backdrop-filter: blur(12px);
+            border-radius: 16px;
+            transition: transform 0.25s, box-shadow 0.25s;
+        }
+
+        .glow-card:hover {
+            transform: translateY(-6px);
+            box-shadow: 0 0 20px rgba(56,189,248,0.4), 0 0 25px rgba(167,139,250,0.3);
+        }
+
+        .icon-circle {
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            margin: auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255,255,255,0.08);
+            transition: all 0.3s;
+        }
+
+        .icon-circle:hover {
+            box-shadow: 0 0 16px rgba(56,189,248,0.6), 0 0 30px rgba(167,139,250,0.5);
+        }
+
+        .gradient-text {
+            background: linear-gradient(90deg, #38bdf8, #a78bfa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        /* Table Styling for History */
+        table {
+            background: rgba(255,255,255,0.05);
+            backdrop-filter: blur(8px);
+            color: #e0e0e0;
+        }
+
+        table th, table td {
+            vertical-align: middle;
+        }
+
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg fixed-top">
+        <div class="container d-flex align-items-center">
+            <a class="navbar-brand me-4" href="/dashboard">Smart Notes</a>
+
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" 
+                aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
+                <ul class="navbar-nav d-flex align-items-center gap-3 flex-wrap">
+                    <li class="nav-item">
+                        <a class="nav-link {% if title=='Dashboard' %}active{% endif %}" href="/dashboard">Dashboard</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if title=='Summarize Text' %}active{% endif %}" href="/summary">Summarize</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if title=='Upload Notes' %}active{% endif %}" href="/upload">Upload Notes</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if title=='Study Planner' %}active{% endif %}" href="/planner">Planner</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if title=='History' %}active{% endif %}" href="/history">History</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="btn btn-outline-danger btn-sm px-3" href="/">Logout</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container mt-4">
+        {% block content %}{% endblock %}
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>
