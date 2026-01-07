@@ -1,7 +1,11 @@
-from flask import Flask, render_template, request, send_file, redirect, url_for
+from flask import (
+    Flask, render_template, request, send_file,
+    redirect, url_for, jsonify
+)
 import os
 from io import BytesIO
 import sqlite3
+import uuid
 
 # ------------------------
 # Summarizers
@@ -13,9 +17,14 @@ from sumy.summarizers.lex_rank import LexRankSummarizer
 try:
     from transformers import pipeline
     hf_summarizer = pipeline("summarization", model="facebook/bart-large-cnn")
-except Exception as e:
+except Exception:
     hf_summarizer = None
     print("HuggingFace model not loaded. Using LexRank fallback.")
+
+# ------------------------
+# Text-to-Speech
+# ------------------------
+from gtts import gTTS
 
 # Optional PDF reader
 try:
@@ -30,7 +39,11 @@ app = Flask(__name__)
 app.secret_key = "supersecretkey"
 
 UPLOAD_FOLDER = os.path.join(os.getcwd(), "uploads")
+AUDIO_FOLDER = os.path.join("static", "audio")
+
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+os.makedirs(AUDIO_FOLDER, exist_ok=True)
+
 app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 
 # ------------------------
@@ -41,8 +54,6 @@ DB_FILE = "history.db"
 def init_db():
     conn = sqlite3.connect(DB_FILE)
     c = conn.cursor()
-
-    # History table
     c.execute("""
         CREATE TABLE IF NOT EXISTS history (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -52,7 +63,6 @@ def init_db():
             timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
         )
     """)
-
     conn.commit()
     conn.close()
 
@@ -69,7 +79,7 @@ def add_history(action, filename, summary=""):
 init_db()
 
 # ------------------------
-# Routes – Auth & Dashboard
+# Auth & Dashboard
 # ------------------------
 @app.route("/")
 def home():
@@ -81,29 +91,38 @@ def register():
 
 @app.route("/dashboard")
 def dashboard():
-    return render_template("dashboard.html", title="Dashboard")
+    conn = sqlite3.connect(DB_FILE)
+    c = conn.cursor()
+
+    c.execute("SELECT COUNT(*) FROM history WHERE action='Upload & Summarize'")
+    notes_count = c.fetchone()[0]
+
+    c.execute("SELECT COUNT(*) FROM history WHERE action='Text Summarize'")
+    summaries_count = c.fetchone()[0]
+
+    c.execute("SELECT COUNT(*) FROM history WHERE action='Plan Created'")
+    plans_count = c.fetchone()[0]
+
+    conn.close()
+
+    stats = {
+        "notes": notes_count,
+        "summaries": summaries_count,
+        "plans": plans_count
+    }
+
+    return render_template("dashboard.html", stats=stats, title="Dashboard")
 
 @app.route("/planner")
 def planner():
     return render_template("planner.html", title="Study Planner")
 
-# ------------------------
-# Flashcards & Questions
-# ------------------------
 @app.route("/flashcards")
 def flashcards():
-    """
-    Static flashcards for now.
-    Later you will generate these from summaries.
-    """
     return render_template("flashcards.html", title="Flashcards")
 
 @app.route("/questions")
 def questions():
-    """
-    MCQ / practice questions page.
-    Backend logic can be added later.
-    """
     return render_template("questions.html", title="Practice Questions")
 
 # ------------------------
@@ -120,12 +139,23 @@ def history_page():
     """)
     rows = c.fetchall()
     conn.close()
+    return render_template("history.html", history=rows, title="History")
 
-    return render_template(
-        "history.html",
-        history=rows,
-        title="History"
-    )
+@app.route("/history/<int:history_id>")
+def history_detail(history_id):
+    conn = sqlite3.connect(DB_FILE)
+    c = conn.cursor()
+    c.execute("""
+        SELECT id, action, filename, summary, timestamp
+        FROM history WHERE id=?
+    """, (history_id,))
+    row = c.fetchone()
+    conn.close()
+
+    if not row:
+        return "History not found", 404
+
+    return render_template("history_detail.html", history=row, title="History Detail")
 
 # ------------------------
 # Upload & Summarize
@@ -143,12 +173,10 @@ def upload_page():
             filepath = os.path.join(app.config["UPLOAD_FOLDER"], file.filename)
             file.save(filepath)
 
-            # TXT
             if file.filename.lower().endswith(".txt"):
                 with open(filepath, "r", encoding="utf-8", errors="ignore") as f:
                     original_text = f.read()
 
-            # PDF
             elif file.filename.lower().endswith(".pdf") and PyPDF2:
                 try:
                     with open(filepath, "rb") as f:
@@ -158,7 +186,7 @@ def upload_page():
                             if text:
                                 original_text += text + " "
                 except Exception as e:
-                    message = f"PDF read error: {str(e)}"
+                    message = f"PDF read error: {e}"
 
             if original_text.strip():
                 summary_output = generate_summary(original_text)
@@ -166,7 +194,6 @@ def upload_page():
                 message = "File summarized successfully!"
             else:
                 message = "No readable text found."
-
         else:
             message = "No file selected."
 
@@ -204,18 +231,42 @@ def summary_page():
     )
 
 # ------------------------
+# Text to Speech (VOICE FEATURE)
+# ------------------------
+@app.route("/text-to-speech", methods=["POST"])
+def text_to_speech():
+    text = request.form.get("text", "").strip()
+
+    if len(text) < 5:
+        return jsonify({"error": "Text too short"}), 400
+
+    filename = f"{uuid.uuid4()}.mp3"
+    filepath = os.path.join(AUDIO_FOLDER, filename)
+
+    try:
+        tts = gTTS(text=text, lang="en")
+        tts.save(filepath)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+    add_history("Voice Generated", filename, text[:150])
+
+    return jsonify({
+        "audio_url": f"/static/audio/{filename}"
+    })
+
+# ------------------------
 # Download Summary PDF
 # ------------------------
 @app.route("/download_summary", methods=["POST"])
 def download_summary():
     summary_text = request.form.get("summary_text", "").strip()
     if not summary_text:
-        return "No summary text received", 400
+        return "No summary text", 400
 
     from fpdf import FPDF
     pdf = FPDF()
     pdf.add_page()
-    pdf.set_auto_page_break(auto=True, margin=15)
     pdf.set_font("Arial", size=12)
     pdf.multi_cell(0, 8, summary_text)
 
@@ -234,7 +285,7 @@ def download_summary():
 # Summarization Logic
 # ------------------------
 def generate_summary(text):
-    text = text.strip()[:3000]  # prevent HF crash
+    text = text.strip()[:3000]
 
     if hf_summarizer:
         try:
