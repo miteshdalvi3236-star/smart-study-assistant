@@ -110,17 +110,21 @@
                             Voice Learning Assistant
                         </h5>
                         <p class="text-white-50 mb-3">
-                            Convert your notes into audio and listen anytime
+                            Speak your notes, convert to text, then listen anytime
                         </p>
 
                         <textarea id="voiceText" class="form-control mb-3"
                             rows="3"
-                            placeholder="Paste your study notes here..."
+                            placeholder="Your spoken notes will appear here..."
                             style="background: rgba(255,255,255,0.08); color: #fff; border: none;">
                         </textarea>
 
+                        <button class="neo-btn w-100 mb-2" onclick="startVoiceInput()">
+                            🎤 Convert to Text  
+                        </button>
+
                         <button class="neo-btn w-100" onclick="generateVoice()">
-                            Convert to Audio
+                            🔊 Convert to Audio
                         </button>
 
                         <audio id="voicePlayer" controls class="w-100 mt-3" style="display:none;"></audio>
@@ -133,9 +137,6 @@
     </div>
 </div>
 
-<!-- =====================
-     STYLES
-===================== -->
 <style>
 body {
     background: radial-gradient(circle at top, #020617, #020617 40%);
@@ -205,10 +206,36 @@ body {
 }
 </style>
 
-<!-- =====================
-     SCRIPT
-===================== -->
 <script>
+function startVoiceInput() {
+    if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+        alert("Your browser does not support Speech Recognition");
+        return;
+    }
+
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const recognition = new SpeechRecognition();
+
+    recognition.lang = "en-IN";
+    recognition.continuous = false;
+    recognition.interimResults = false;
+
+    recognition.onstart = function () {
+        alert("Convert to text...");
+    };
+
+    recognition.onresult = function (event) {
+        const spokenText = event.results[0][0].transcript;
+        document.getElementById("voiceText").value += " " + spokenText;
+    };
+
+    recognition.onerror = function (event) {
+        alert("Voice error: " + event.error);
+    };
+
+    recognition.start();
+}
+
 function generateVoice() {
     const text = document.getElementById("voiceText").value.trim();
     if (text.length < 5) {

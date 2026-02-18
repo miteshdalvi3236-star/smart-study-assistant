@@ -2,16 +2,13 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>{{ title if title else "Smart Notes" }}</title>
+    <title>{{ title if title else "Smart Notes AI" }}</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <!-- Bootstrap -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 
-    <!-- Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
 
-    <!-- Font -->
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
 
     <style>
@@ -37,6 +34,9 @@
             display: flex;
             flex-direction: column;
             border-right: 1px solid rgba(255,255,255,0.05);
+            position: sticky;
+            top: 0;
+            height: 100vh;
         }
 
         .brand {
@@ -55,8 +55,9 @@
             display: flex;
             align-items: center;
             gap: 12px;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
             transition: all 0.25s ease;
+            text-decoration: none;
         }
 
         .nav-link:hover {
@@ -67,13 +68,24 @@
         .nav-link.active {
             background: linear-gradient(90deg, rgba(56,189,248,0.25), rgba(167,139,250,0.25));
             color: #fff;
+            border: 1px solid rgba(255,255,255,0.1);
         }
 
-      
-        
-        #voiceFeature:hover {
-            box-shadow: 0 0 12px rgba(56,189,248,0.8), 0 0 24px rgba(167,139,250,0.6);
-            background: linear-gradient(90deg, rgba(56,189,248,0.15), rgba(167,139,250,0.15));
+        /* NEW BUTTON STYLE */
+        .neo-btn {
+            background: linear-gradient(90deg, #38bdf8, #a78bfa);
+            border: none;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 10px;
+            font-weight: 500;
+            transition: 0.3s;
+        }
+
+        .neo-btn:hover {
+            opacity: 0.9;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(56,189,248,0.4);
         }
 
         /* MAIN AREA */
@@ -118,13 +130,15 @@
             flex: 1;
         }
 
-        /* Glass card modal style */
+        /* Glass card style */
         .glass-card {
             background: rgba(255,255,255,0.05);
             border-radius: 12px;
             padding: 20px;
             backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.1);
         }
+
         .icon-circle {
             width: 50px;
             height: 50px;
@@ -136,8 +150,9 @@
             margin: auto;
             font-size: 28px;
         }
+
         .subtle-glow {
-            box-shadow: 0 0 10px rgba(56,189,248,0.5);
+            box-shadow: 0 0 15px rgba(56,189,248,0.3);
         }
 
         @media (max-width: 768px) {
@@ -155,50 +170,49 @@
 
 <div class="app">
 
-    <!-- SIDEBAR -->
     <aside class="sidebar">
         <div class="brand">Smart Notes</div>
 
-        <a href="/dashboard" class="nav-link {% if title=='Dashboard' %}active{% endif %}">
+        <a href="/dashboard" class="nav-link {% if request.path == '/dashboard' %}active{% endif %}">
             <i class="bi bi-grid"></i> Dashboard
         </a>
 
-        <a href="/summary" class="nav-link {% if title=='Summarize Text' %}active{% endif %}">
+        <a href="/summary" class="nav-link {% if request.path == '/summary' %}active{% endif %}">
             <i class="bi bi-lightbulb"></i> Summarize
         </a>
 
-        <a href="/upload" class="nav-link {% if title=='Upload Notes' %}active{% endif %}">
+        <a href="/youtube" class="nav-link {% if request.path == '/youtube' %}active{% endif %}">
+            <i class="bi bi-youtube"></i> YouTube AI
+        </a>
+
+        <a href="/upload" class="nav-link {% if request.path == '/upload' %}active{% endif %}">
             <i class="bi bi-upload"></i> Upload Notes
         </a>
-
-        <a href="/planner" class="nav-link {% if title=='Study Planner' %}active{% endif %}">
-            <i class="bi bi-calendar-check"></i> Planner
-        </a>
-
-        <a href="#" id="voiceFeature" class="nav-link">
-            <i class="bi bi-mic"></i> Voice
-        </a>
-
-        <a href="/history" class="nav-link {% if title=='History' %}active{% endif %}">
+ <a href="#" id="voiceFeature" class="nav-link">
+                <i class="bi bi-mic-fill text-info"></i> Voice Mode
+            </a>
+        <a href="/history" class="nav-link {% if request.path == '/history' %}active{% endif %}">
             <i class="bi bi-clock-history"></i> History
         </a>
+
+        
+           
+        
     </aside>
 
-    <!-- MAIN -->
     <div class="main">
 
-        <!-- TOP NAVBAR -->
         <div class="topbar">
             <div class="dropdown">
                 <a class="user-dropdown dropdown-toggle text-decoration-none"
                    href="#" role="button" data-bs-toggle="dropdown">
                     <i class="bi bi-person-circle me-1"></i>
-                    {{ session.get('username', 'User') }}
+                    {{ session.get('user', 'Student') }}
                 </a>
 
-                <ul class="dropdown-menu dropdown-menu-end">
+                <ul class="dropdown-menu dropdown-menu-end shadow">
                     <li>
-                        <a class="dropdown-item" href="/settings">
+                        <a class="dropdown-item" href="#">
                             <i class="bi bi-gear me-2"></i> Settings
                         </a>
                     </li>
@@ -212,7 +226,6 @@
             </div>
         </div>
 
-        <!-- PAGE CONTENT -->
         <main class="content">
             {% block content %}{% endblock %}
         </main>
@@ -221,24 +234,23 @@
 
 </div>
 
-<!-- Voice Assistant Modal -->
 <div class="modal fade" id="voiceModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content" style="background: rgba(20,20,35,0.95); color:#fff; border:none; border-radius:12px;">
+    <div class="modal-content" style="background: rgba(20,20,35,0.98); color:#fff; border: 1px solid rgba(255,255,255,0.1); border-radius:16px;">
       <div class="modal-header border-0">
-        <h5 class="modal-title">Voice Learning Assistant</h5>
+        <h5 class="modal-title fw-bold">AI Voice Assistant</h5>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body">
-        <div class="glass-card h-100 p-3">
+        <div class="text-center p-3">
           <div class="icon-circle subtle-glow mb-3">🎧</div>
-          <p class="text-white-50 mb-3">Convert your notes into audio and listen anytime</p>
+          <p class="text-white-50 mb-3">Turn your study materials into audio for on-the-go learning.</p>
           <textarea id="modalVoiceText" class="form-control mb-3"
-              rows="4"
-              placeholder="Paste your study notes here..."
-              style="background: rgba(255,255,255,0.08); color: #fff; border: none;"></textarea>
-          <button class="neo-btn w-100" id="modalVoiceBtn">Convert to Audio</button>
-          <audio id="modalVoicePlayer" controls class="w-100 mt-3" style="display:none;"></audio>
+              rows="5"
+              placeholder="Paste notes or summary here..."
+              style="background: rgba(255,255,255,0.05); color: #fff; border: 1px solid rgba(255,255,255,0.1);"></textarea>
+          <button class="neo-btn w-100" id="modalVoiceBtn">Start Audio Conversion</button>
+          <audio id="modalVoicePlayer" controls class="w-100 mt-4" style="display:none;"></audio>
         </div>
       </div>
     </div>
@@ -247,8 +259,8 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
-<!-- Voice Feature JS -->
 <script>
+// Voice Assistant Logic
 document.getElementById("voiceFeature").addEventListener("click", function(e) {
     e.preventDefault();
     var voiceModal = new bootstrap.Modal(document.getElementById('voiceModal'));
@@ -256,11 +268,15 @@ document.getElementById("voiceFeature").addEventListener("click", function(e) {
 });
 
 document.getElementById("modalVoiceBtn").addEventListener("click", function() {
+    let btn = this;
     let text = document.getElementById("modalVoiceText").value.trim();
     if (!text || text.length < 5) {
-        alert("Please enter some text to convert.");
+        alert("Please enter more text to convert.");
         return;
     }
+
+    btn.innerText = "Processing...";
+    btn.disabled = true;
 
     fetch("/text-to-speech", {
         method: "POST",
@@ -269,16 +285,22 @@ document.getElementById("modalVoiceBtn").addEventListener("click", function() {
     })
     .then(res => res.json())
     .then(data => {
+        btn.innerText = "Convert to Audio";
+        btn.disabled = false;
         if (data.audio_url) {
             let player = document.getElementById("modalVoicePlayer");
             player.src = data.audio_url;
             player.style.display = "block";
             player.play();
-        } else if (data.error) {
-            alert("Error: " + data.error);
+        } else {
+            alert("Error: " + (data.error || "Unknown error"));
         }
     })
-    .catch(err => alert("Error: " + err));
+    .catch(err => {
+        btn.innerText = "Convert to Audio";
+        btn.disabled = false;
+        alert("Error connecting to server.");
+    });
 });
 </script>
 

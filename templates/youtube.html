@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>YouTube AI Summarizer</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <style>
+        body {
+            margin: 0;
+            background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+            font-family: 'Segoe UI', sans-serif;
+            color: white;
+        }
+
+        .navbar {
+            background: rgba(0,0,0,0.4);
+            backdrop-filter: blur(10px);
+        }
+
+        .navbar-brand {
+            font-weight: bold;
+            color: #00ffd5 !important;
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(15px);
+            border-radius: 20px;
+            padding: 35px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .glow-btn {
+            background: linear-gradient(45deg, #00c6ff, #0072ff);
+            border: none;
+            border-radius: 30px;
+            padding: 12px 25px;
+            font-weight: bold;
+            transition: 0.3s ease;
+            color: white;
+        }
+
+        .glow-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 20px rgba(0, 198, 255, 0.8);
+        }
+
+        .keyword {
+            background: linear-gradient(45deg, #ff512f, #dd2476);
+            border-radius: 20px;
+            padding: 6px 12px;
+            margin: 5px;
+            display: inline-block;
+            font-size: 13px;
+        }
+
+        .fade-in {
+            animation: fadeIn 0.8s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(15px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .footer {
+            margin-top: 50px;
+            padding: 20px;
+            text-align: center;
+            font-size: 14px;
+            opacity: 0.7;
+        }
+    </style>
+</head>
+<body>
+
+<nav class="navbar navbar-expand-lg navbar-dark px-4">
+    <a class="navbar-brand" href="#">Smart Notes AI</a>
+    <div class="ms-auto">
+        <a href="/dashboard" class="btn btn-sm btn-outline-light me-2">Dashboard</a>
+        <a href="/summary" class="btn btn-sm btn-outline-light me-2">Text</a>
+        <a href="/upload" class="btn btn-sm btn-outline-light me-2">Upload</a>
+        <a href="/logout" class="btn btn-sm btn-danger">Logout</a>
+    </div>
+</nav>
+
+<div class="container mt-5">
+
+    <div class="glass-card fade-in">
+        <h2 class="text-center mb-4">🎥 AI YouTube Smart Summarizer</h2>
+
+        {% if message %}
+            <div class="alert alert-danger">
+                {{ message }}
+            </div>
+        {% endif %}
+
+        <form method="POST" id="youtubeForm">
+            <div class="mb-3">
+                <input type="text"
+                       name="youtube_url"
+                       class="form-control form-control-lg"
+                       placeholder="Paste YouTube URL here..."
+                       required>
+            </div>
+
+            <div class="text-center">
+                <button type="submit" class="glow-btn" id="submitBtn">
+                    Generate AI Summary
+                </button>
+            </div>
+        </form>
+
+        <div id="loadingSpinner" class="text-center mt-4 d-none">
+            <div class="spinner-border text-light"></div>
+            <p class="mt-2">Analyzing transcript with AI...</p>
+        </div>
+    </div>
+
+    {% if summary and not summary.error %}
+    <div class="glass-card mt-5 fade-in">
+
+        <h3 class="text-info mb-3">{{ summary.title }}</h3>
+
+        {% if summary.definition %}
+        <div class="mb-3">
+            <h5 class="text-warning">Definition</h5>
+            <p>{{ summary.definition }}</p>
+        </div>
+        {% endif %}
+
+        {% if summary.explanation %}
+        <div class="mb-3">
+            <h5 class="text-success">Explanation</h5>
+            <p>{{ summary.explanation }}</p>
+        </div>
+        {% endif %}
+
+        {% if summary.bullet_points %}
+        <div class="mb-3">
+            <h5 class="text-primary">Key Points</h5>
+            <ul>
+                {% for point in summary.bullet_points %}
+                    <li>{{ point }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
+        {% if summary.important_keywords %}
+        <div class="mb-3">
+            <h5 class="text-danger">Important Keywords</h5>
+            {% for word in summary.important_keywords %}
+                <span class="keyword">{{ word }}</span>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <div class="mb-3">
+            <strong>Diagram Required:</strong>
+            <span class="badge bg-warning text-dark">
+                {{ summary.diagram_required }}
+            </span>
+        </div>
+
+        {% if summary.possible_exam_question %}
+        <div class="mb-3">
+            <h5 class="text-info">Possible Exam Question</h5>
+            <p>{{ summary.possible_exam_question }}</p>
+        </div>
+        {% endif %}
+
+        <div class="text-center mt-4">
+            <button class="glow-btn" onclick="convertToSpeech()">
+                🔊 Listen Summary
+            </button>
+        </div>
+
+        <audio id="audioPlayer" controls class="mt-3 w-100 d-none"></audio>
+    </div>
+    {% endif %}
+
+</div>
+
+<div class="footer">
+    © 2026 Smart Notes AI | Powered by AI
+</div>
+
+<script>
+    const form = document.getElementById("youtubeForm");
+    const spinner = document.getElementById("loadingSpinner");
+    const submitBtn = document.getElementById("submitBtn");
+
+    form.addEventListener("submit", function() {
+        spinner.classList.remove("d-none");
+        submitBtn.disabled = true;
+        submitBtn.innerText = "Processing...";
+    });
+
+    function convertToSpeech() {
+        const textContent = `
+            {{ summary.title if summary else "" }}
+            {{ summary.definition if summary else "" }}
+            {{ summary.explanation if summary else "" }}
+            {{ summary.bullet_points | join(' ') if summary and summary.bullet_points else "" }}
+        `;
+
+        fetch("/text-to-speech", {
+            method: "POST",
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            body: "text=" + encodeURIComponent(textContent)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if(data.audio_url){
+                const audio = document.getElementById("audioPlayer");
+                audio.src = data.audio_url;
+                audio.classList.remove("d-none");
+                audio.play();
+            }
+        });
+    }
+</script>
+
+</body>
+</html>

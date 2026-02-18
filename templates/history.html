@@ -1,55 +1,114 @@
-{% extends "layout.html" %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ title }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background-color: #f4f7f9; padding: 30px; }
+        .card { margin-bottom: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+        .badge-keyword { margin-right: 5px; margin-bottom: 3px; }
+        .card-header { cursor: pointer; }
+        pre { white-space: pre-wrap; word-wrap: break-word; }
+    </style>
+</head>
+<body>
+   <a href="/dashboard" class="btn btn-primary" id="dashboard-btn">
+    Dashboard
+</a>
 
-{% block content %}
-<div class="container mt-4">
-    <h2 class="gradient-text mb-4">History</h2>
+<style>
+#dashboard-btn {
+    position: fixed;
+    top: 15px;
+    right: 15px;
+    z-index: 1000;
+    border-radius: 50px;
+    padding: 8px 20px;
+    font-weight: 600;
+    transition: 0.2s;
+}
+#dashboard-btn:hover {
+    transform: scale(1.05);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+}
+</style>
+
+<div class="container">
+    <h2 class="mb-4">History</h2>
+
     {% if history %}
-    <div class="table-responsive">
-        <table class="table table-dark table-striped table-hover">
-            <thead>
-                <tr>
-                    <th>#</th>
-                    <th>Action</th>
-                    <th>File / Input</th>
-                    <th>Summary</th>
-                    <th>Timestamp</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for row in history %}
-                <tr style="cursor:pointer;" data-bs-toggle="modal" data-bs-target="#historyModal{{ row[0] }}">
-                    <td>{{ loop.index }}</td>
-                    <td>{{ row[1] }}</td>
-                    <td>{{ row[2] }}</td>
-                    <td>{{ row[3][:100] }}{% if row[3]|length > 100 %}...{% endif %}</td>
-                    <td>{{ row[4] }}</td>
-                </tr>
+        {% for item in history %}
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center" data-bs-toggle="collapse" href="#collapse{{ loop.index }}" aria-expanded="false">
+                    <strong>{{ item.summary.title or item.filename }}</strong>
+                    <small>{{ item.timestamp }}</small>
+                </div>
+                <div class="collapse" id="collapse{{ loop.index }}">
+                    <div class="card-body">
+                        {% if item.summary.definition %}
+                        <p><strong>Definition:</strong> {{ item.summary.definition }}</p>
+                        {% endif %}
 
-                <!-- Modal for this row -->
-                <div class="modal fade" id="historyModal{{ row[0] }}" tabindex="-1" aria-labelledby="historyModalLabel{{ row[0] }}" aria-hidden="true">
-                    <div class="modal-dialog modal-lg modal-dialog-scrollable">
-                        <div class="modal-content bg-dark text-light">
-                            <div class="modal-header">
-                                <h5 class="modal-title" id="historyModalLabel{{ row[0] }}">{{ row[1] }} - {{ row[4] }}</h5>
-                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-                            </div>
-                            <div class="modal-body">
-                                <p><strong>File / Input:</strong> {{ row[2] }}</p>
-                                <p><strong>Summary:</strong></p>
-                                <pre style="white-space: pre-wrap;">{{ row[3] }}</pre>
-                            </div>
-                            <div class="modal-footer">
-                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                            </div>
-                        </div>
+                        {% if item.summary.explanation %}
+                        <p><strong>Explanation:</strong> {{ item.summary.explanation }}</p>
+                        {% endif %}
+
+                        {% if item.summary.bullet_points %}
+                        <p><strong>Key Points:</strong></p>
+                        <ul>
+                            {% for point in item.summary.bullet_points %}
+                            <li>{{ point }}</li>
+                            {% endfor %}
+                        </ul>
+                        {% endif %}
+
+                        {% if item.summary.important_keywords %}
+                        <p><strong>Keywords:</strong><br>
+                            {% for kw in item.summary.important_keywords %}
+                            <span class="badge bg-primary badge-keyword">{{ kw }}</span>
+                            {% endfor %}
+                        </p>
+                        {% endif %}
+
+                        {% if item.summary.five_mark_answer %}
+                        <p><strong>5-Mark Answer:</strong> {{ item.summary.five_mark_answer }}</p>
+                        {% endif %}
+
+                        {% if item.summary.ten_mark_answer %}
+                        <p><strong>10-Mark Answer:</strong> {{ item.summary.ten_mark_answer }}</p>
+                        {% endif %}
+
+                        {% if item.summary.viva_questions %}
+                        <p><strong>Viva Questions:</strong></p>
+                        <ul>
+                            {% for q in item.summary.viva_questions %}
+                            <li>{{ q }}</li>
+                            {% endfor %}
+                        </ul>
+                        {% endif %}
+
+                        {% if item.summary.mcqs %}
+                        <p><strong>MCQs:</strong></p>
+                        <ul>
+                            {% for mcq in item.summary.mcqs %}
+                            <li>
+                                Q: {{ mcq.question }}<br>
+                                Options: {{ mcq.options | join(", ") }}<br>
+                                Answer: {{ mcq.answer }}
+                            </li>
+                            {% endfor %}
+                        </ul>
+                        {% endif %}
                     </div>
                 </div>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
+            </div>
+        {% endfor %}
     {% else %}
-    <p>No history found.</p>
+        <p>No history found.</p>
     {% endif %}
 </div>
-{% endblock %}
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
